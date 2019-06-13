@@ -48,52 +48,65 @@ class IssueTable extends React.Component {
 }
 
 class IssueAdd extends React.Component {
+  constructor() {
+    super();
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+  handleSubmit(e) {
+    e.preventDefault();
+    var form = document.forms.issueAdd;
+    this.props.createIssue({
+      owner: form.owner.value,
+      title: form.title.value,
+      status: "New",
+      created: new Date()
+    });
+    form.owner.value = "";
+    form.title.value = "";
+  }
   render() {
-    return <div>This is a placeholder for an Issue Add entry form</div>;
+    return (
+      <div>
+        <form name="issueAdd" onSubmit={this.handleSubmit}>
+          <input type="text" name="owner" placeholder="Owner" />
+          <input type="text" name="title" placeholder="Title" />
+          <button>Add</button>
+        </form>
+      </div>
+    );
   }
 }
 
-const issues = [
-  {
-    id: 1,
-    status: "opened",
-    owner: "Phyllis",
-    created: new Date("2019-04-19"),
-    effort: 4,
-    completionDate: undefined,
-    title: "Error in console when clicking add"
-  },
-  {
-    id: 2,
-    status: "Assigned",
-    owner: "Atieno",
-    created: new Date("2019-05-09"),
-    effort: 17,
-    completionDate: new Date("2019-01-10"),
-    effort: 23,
-    completionDate: new Date("2019-03-30"),
-    title: "Missing border on bottom panel"
-  }
-];
 class IssueList extends React.Component {
   constructor() {
     super();
-    this.state = { issues: issues };
-    setTimeout(this.createTestIssue.bind(this), 2000);
+    this.state = { issues: [] };
+    this.createIssue = this.createIssue.bind(this);
   }
   createIssue(newIssue) {
     const newIssues = this.state.issues.slice();
-    newIssue.id = this.state.issues.length + 1;
+    newIssue.id = thisState.issues.length + 1;
     newIssues.push(newIssues);
     this.setState({ issues: newIssues });
   }
-  createTestIssue() {
-    this.createIssue({
-      status: "New",
-      owner: "Phyllis",
-      created: new Date(),
-      title: "Completion date should be optional"
-    });
+  componentDidMount() {
+    this.loadData();
+  }
+  loadData() {
+    fetch("/api/issues")
+      .then(response => response.json())
+      .then(data => {
+        console.log("Total count of records:", data._metadata.total_count);
+        data.records.forEach(issue => {
+          issue.created = new Date(issue.created);
+          if (issue.CompletionDate)
+            issue.CompletionDate = new Date(issue.CompletionDate);
+        });
+        this.setState({ issues: data.records });
+      })
+      .catch(err => {
+        console.log(err);
+      });
   }
 
   render() {
@@ -104,7 +117,7 @@ class IssueList extends React.Component {
         <hr />
         <IssueTable issues={this.state.issues} />
         <hr />
-        <IssueAdd />
+        <IssueAdd createIssue={this.createIssue} />
       </div>
     );
   }

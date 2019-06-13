@@ -1,10 +1,6 @@
 "use strict";
 
-var _ref;
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -174,39 +170,49 @@ var IssueAdd = function (_React$Component4) {
   function IssueAdd() {
     _classCallCheck(this, IssueAdd);
 
-    return _possibleConstructorReturn(this, (IssueAdd.__proto__ || Object.getPrototypeOf(IssueAdd)).apply(this, arguments));
+    var _this4 = _possibleConstructorReturn(this, (IssueAdd.__proto__ || Object.getPrototypeOf(IssueAdd)).call(this));
+
+    _this4.handleSubmit = _this4.handleSubmit.bind(_this4);
+    return _this4;
   }
 
   _createClass(IssueAdd, [{
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      e.preventDefault();
+      var form = document.forms.issueAdd;
+      this.props.createIssue({
+        owner: form.owner.value,
+        title: form.title.value,
+        status: "New",
+        created: new Date()
+      });
+      form.owner.value = "";
+      form.title.value = "";
+    }
+  }, {
     key: "render",
     value: function render() {
       return React.createElement(
         "div",
         null,
-        "This is a placeholder for an Issue Add entry form"
+        React.createElement(
+          "form",
+          { name: "issueAdd", onSubmit: this.handleSubmit },
+          React.createElement("input", { type: "text", name: "owner", placeholder: "Owner" }),
+          React.createElement("input", { type: "text", name: "title", placeholder: "Title" }),
+          React.createElement(
+            "button",
+            null,
+            "Add"
+          )
+        )
       );
     }
   }]);
 
   return IssueAdd;
 }(React.Component);
-
-var issues = [{
-  id: 1,
-  status: "opened",
-  owner: "Phyllis",
-  created: new Date("2019-04-19"),
-  effort: 4,
-  completionDate: undefined,
-  title: "Error in console when clicking add"
-}, (_ref = {
-  id: 2,
-  status: "Assigned",
-  owner: "Atieno",
-  created: new Date("2019-05-09"),
-  effort: 17,
-  completionDate: new Date("2019-01-10")
-}, _defineProperty(_ref, "effort", 23), _defineProperty(_ref, "completionDate", new Date("2019-03-30")), _defineProperty(_ref, "title", "Missing border on bottom panel"), _ref)];
 
 var IssueList = function (_React$Component5) {
   _inherits(IssueList, _React$Component5);
@@ -216,8 +222,8 @@ var IssueList = function (_React$Component5) {
 
     var _this5 = _possibleConstructorReturn(this, (IssueList.__proto__ || Object.getPrototypeOf(IssueList)).call(this));
 
-    _this5.state = { issues: issues };
-    setTimeout(_this5.createTestIssue.bind(_this5), 2000);
+    _this5.state = { issues: [] };
+    _this5.createIssue = _this5.createIssue.bind(_this5);
     return _this5;
   }
 
@@ -225,18 +231,33 @@ var IssueList = function (_React$Component5) {
     key: "createIssue",
     value: function createIssue(newIssue) {
       var newIssues = this.state.issues.slice();
-      newIssue.id = this.state.issues.length + 1;
+      newIssue.id = thisState.issues.length + 1;
       newIssues.push(newIssues);
       this.setState({ issues: newIssues });
     }
   }, {
-    key: "createTestIssue",
-    value: function createTestIssue() {
-      this.createIssue({
-        status: "New",
-        owner: "Phyllis",
-        created: new Date(),
-        title: "Completion date should be optional"
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      this.loadData();
+    }
+  }, {
+    key: "createIssue",
+    value: function createIssue(newIssue) {
+      var _this6 = this;
+
+      fetch("/api/issues", {
+        method: "POST",
+        header: { "content-Type": "application/json" },
+        body: JSON.stringify(newIssue)
+      }).then(function (response) {
+        return response.json();
+      }).then(function (updatedIssue) {
+        updatedIssue.created = new Date(updatedIssue.created);
+        if (updatedIssue.completionDate) updatedIssue.completionDate = new Date(updatedIssue.completionDate);
+        var newIssues = _this6.state.issues.concat(updatedIssue);
+        _this6.setState = { issues: newIssues };
+      }).catch(function (err) {
+        alert("Error in sending data to server:" + err.message);
       });
     }
   }, {
@@ -254,7 +275,7 @@ var IssueList = function (_React$Component5) {
         React.createElement("hr", null),
         React.createElement(IssueTable, { issues: this.state.issues }),
         React.createElement("hr", null),
-        React.createElement(IssueAdd, null)
+        React.createElement(IssueAdd, { createIssue: this.createIssue })
       );
     }
   }]);
